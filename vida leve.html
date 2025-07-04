@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rede Social Simples</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+  <div class="container mx-auto p-4 max-w-2xl">
+    <!-- Cabeçalho -->
+    <header class="bg-blue-600 text-white p-4 rounded-lg shadow mb-6">
+      <h1 class="text-2xl font-bold">Minha Rede Social</h1>
+      <p class="text-sm">Bem-vindo! Compartilhe seus pensamentos.</p>
+    </header>
+
+    <!-- Formulário de Postagem -->
+    <div class="bg-white p-4 rounded-lg shadow mb-6">
+      <textarea id="postContent" class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="No que você está pensando? (máx. 280 caracteres)" maxlength="280"></textarea>
+      <div class="flex justify-between items-center mt-2">
+        <span id="charCount" class="text-gray-500 text-sm">280 caracteres restantes</span>
+        <button id="postButton" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Postar</button>
+      </div>
+    </div>
+
+    <!-- Controles de Ordenação -->
+    <div class="mb-4">
+      <label for="sortSelect" class="mr-2">Ordenar por:</label>
+      <select id="sortSelect" class="p-2 border rounded-lg">
+        <option value="newest">Mais recentes</option>
+        <option value="oldest">Mais antigos</option>
+        <option value="mostLiked">Mais curtidos</option>
+      </select>
+    </div>
+
+    <!-- Feed de Posts -->
+    <div id="feed" class="space-y-4">
+      <!-- Posts serão adicionados aqui via JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    // Array para armazenar posts
+    let posts = [];
+
+    // Função para adicionar um novo post
+    function addPost(content) {
+      const post = {
+        id: Date.now(),
+        content: content,
+        date: new Date().toLocaleString('pt-BR'),
+        likes: 0,
+        comments: [],
+        isEditing: false
+      };
+      posts.unshift(post);
+      renderFeed();
+    }
+
+    // Função para curtir um post
+    function likePost(postId) {
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        post.likes++;
+        renderFeed();
+      }
+    }
+
+    // Função para excluir um post
+    function deletePost(postId) {
+      posts = posts.filter(p => p.id !== postId);
+      renderFeed();
+    }
+
+    // Função para adicionar um comentário
+    function addComment(postId, commentContent) {
+      const post = posts.find(p => p.id === postId);
+      if (post && commentContent.trim()) {
+        post.comments.push({
+          id: Date.now(),
+          content: commentContent,
+          date: new Date().toLocaleString('pt-BR')
+        });
+        renderFeed();
+      }
+    }
+
+    // Função para alternar modo de edição
+    function toggleEdit(postId) {
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        post.isEditing = !post.isEditing;
+        renderFeed();
+      }
+    }
+
+    // Função para salvar edição
+    function saveEdit(postId, newContent) {
+      const post = posts.find(p => p.id === postId);
+      if (post && newContent.trim()) {
+        post.content = newContent;
+        post.isEditing = false;
+        renderFeed();
+      }
+    }
+
+    // Função para ordenar posts
+    function sortPosts(criteria) {
+      if (criteria === 'newest') {
+        posts.sort((a, b) => b.id - a.id);
+      } else if (criteria === 'oldest') {
+        posts.sort((a, b) => a.id - b.id);
+      } else if (criteria === 'mostLiked') {
+        posts.sort((a, b) => b.likes - a.likes);
+      }
+      renderFeed();
+    }
+
+    // Função para renderizar o feed
+    function renderFeed() {
+      const feed = document.getElementById('feed');
+      feed.innerHTML = '';
+      posts.forEach(post => {
+        const postElement = document.createElement('div');
+        postElement.className = 'bg-white p-4 rounded-lg shadow';
+        postElement.innerHTML = `
+          ${post.isEditing ? `
+            <textarea class="w-full p-2 border rounded-lg" rows="3">${post.content}</textarea>
+            <div class="mt-2">
+              <button onclick="saveEdit(${post.id}, this.previousElementSibling.value)" class="text-green-600 hover:text-green-800 mr-2">Salvar</button>
+              <button onclick="toggleEdit(${post.id})" class="text-gray-600 hover:text-gray-800">Cancelar</button>
+            </div>
+          ` : `
+            <p class="text-gray-800">${post.content}</p>
+            <p class="text-gray-500 text-sm mt-2">${post.date}</p>
+            <div class="mt-2 flex items-center">
+              <button onclick="likePost(${post.id})" class="text-blue-600 hover:text-blue-800 mr-4">Curtir (${post.likes})</button>
+              <button onclick="toggleEdit(${post.id})" class="text-yellow-600 hover:text-yellow-800 mr-4">Editar</button>
+              <button onclick="deletePost(${post.id})" class="text-red-600 hover:text-red-800">Excluir</button>
+            </div>
+          `}
+          <!-- Seção de Comentários -->
+          <div class="mt-4">
+            <div class="space-y-2">
+              ${post.comments.map(comment => `
+                <div class="bg-gray-100 p-2 rounded">
+                  <p class="text-gray-700 text-sm">${comment.content}</p>
+                  <p class="text-gray-500 text-xs">${comment.date}</p>
+                </div>
+              `).join('')}
+            </div>
+            <div class="mt-2 flex">
+              <input type="text" class="flex-1 p-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Escreva um comentário...">
+              <button onclick="addComment(${post.id}, this.previousElementSibling.value)" class="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700">Comentar</button>
+            </div>
+          </div>
+        `;
+        feed.appendChild(postElement);
+      });
+    }
+
+    // Evento de clique no botão de postar
+    document.getElementById('postButton').addEventListener('click', () => {
+      const content = document.getElementById('postContent').value.trim();
+      if (content) {
+        addPost(content);
+        document.getElementById('postContent').value = '';
+        updateCharCount();
+      }
+    });
+
+    // Evento para atualizar contador de caracteres
+    function updateCharCount() {
+      const textarea = document.getElementById('postContent');
+      const charCount = document.getElementById('charCount');
+      const remaining = 280 - textarea.value.length;
+      charCount.textContent = `${remaining} caracteres restantes`;
+    }
+
+    document.getElementById('postContent').addEventListener('input', updateCharCount);
+
+    // Evento para ordenação
+    document.getElementById('sortSelect').addEventListener('change', (e) => {
+      sortPosts(e.target.value);
+    });
+
+    // Inicializa o feed e contador de caracteres
+    updateCharCount();
+    renderFeed();
+  </script>
+</body>
+</html>
